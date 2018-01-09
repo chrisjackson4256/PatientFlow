@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>SCCA Clinic Patient Flow</title>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <style>
+            #title {
+                font-family: sans-serif;
+                text-align: center;
+            }
+
+            #chart {
+                margin: auto;
+                border-style: solid;
+                width: 1040px;
+                height: 660px;
+            }
+
+            .charts {
+                margin: auto;
+                margin-top: 50px;
+                width: 1040px;
+                height: 250px;
+            }
+
+            #chart1 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart2 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart3 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart4 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart5 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart6 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart7 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+
+            #chart8 {
+                display: inline-block;
+                width: 255px;
+                height: 250px;
+                margin-left: 2px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="title">
+            <h1>SCCA Patient Flow</h1>
+        </div>
+
+        <div id="chart"></div>
+
+        <div class="charts">
+            <div id="chart1"></div>
+
+            <div id="chart2"></div>
+
+            <div id="chart3"></div>
+
+            <div id="chart4"></div>
+        </div>
+
+        <div class="charts">
+            <div id="chart5"></div>
+
+            <div id="chart6"></div>
+
+            <div id="chart7"></div>
+
+            <div id="chart8"></div>
+        </div>
+
+        <script type="text/javascript">
+            // svg dimensions
+            var margin = {top: 20, right: 20, bottom: 20, left: 20},
+                padding = {top: 60, right: 60, bottom: 60, left: 60},
+                outerWidth = 1200,
+                outerHeight = 800,
+                innerWidth = outerWidth - margin.left - margin.right,
+                innerHeight = outerHeight - margin.top - margin.bottom,
+                w = innerWidth - padding.left - padding.right,
+                h = innerHeight - padding.top - padding.bottom,
+                outerWidth2 = 400,
+                outerHeight2 = 400,
+                innerWidth2 = outerWidth2 - margin.left - margin.right,
+                innerHeight2 = outerHeight2 - margin.top - margin.bottom,
+                w2 = innerWidth2 - padding.left - padding.right,
+                h2 = innerHeight2 - padding.top - padding.bottom;
+
+            // capacity dimensions
+            var w2 = 250;
+            var h2 = 250;
+            var padding2 = 50;
+
+            // node variables
+            var node_radius = 5;
+            var num_nodes = 484;
+
+            // strength of force
+            var forceStrength = 0.03;
+
+            // foci of the central forces
+            var foci = {
+                "launchpad": { x: w/8, y: h/2, color: "gray"},
+                "homebase": { x: 7*w/8, y: h/2, color: "gray" },
+                "lab": { x: 3*w/8, y: 7*h/8, color: "pink" },
+                "radiationoncology": { x: w/4, y: 3*h/4, color: "aqua" },
+                "radiology": { x: 5*w/8, y: 7*h/8, color: "purple" },
+                "clinic3": { x: 3*w/4, y: 3*h/4, color: "fuchsia" },
+                "clinic4": { x: w/4, y: h/4, color: "fuchsia" },
+                "waitingpool": { x: w/2, y: h/2, color: "red" },
+                "infusion": { x: 3*w/8, y: h/8, color: "green" },
+                "apheresiscellulartherapy": { x: 5*w/8, y: h/8, color: "blue" },
+                "clinic6": { x: 3*w/4, y: h/4, color: "fuchsia" }
+            };
+
+
+            // create nodes
+            var nodes = d3.range(0, num_nodes).map(function(o, i) {
+                return {
+                    id: "node" + i,
+                    x: foci.launchpad.x + Math.random(),
+                    y: foci.launchpad.y + Math.random(),
+                    place: "launchpad"
+                }
+            });
+
+            // amount of "charge" for each node
+            var charge = function(d) {
+                return -Math.pow(d.radius, 2) * forceStrength;
+            };
+
+            // force layout
+            var simulation = d3.forceSimulation(nodes)
+                .velocityDecay(0.2)
+                .force("x", d3.forceX().strength(forceStrength).x(foci.launchpad.x))
+                .force("y", d3.forceY().strength(forceStrength).y(foci.launchpad.y))
+                .force("collide", d3.forceCollide().radius(node_radius))
+                .on("tick", tick);
+
+
+            // draw svg element
+            var svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", w)
+                .attr("height", h);
+
+            // draw date text
+            svg.append("text")
+              .attr("x", foci.launchpad.x)
+              .attr("y", foci.infusion.y - 40)
+              .style("font-family", "sans-serif")
+              .style("font-size", 18)
+              .style("text-anchor", "middle")
+              .text("Wednesday, October 4, 2017");
+
+            // draw time text
+            svg.append("text")
+              .attr("x", foci.launchpad.x - 40)
+              .attr("y", foci.infusion.y - 15)
+              .style("font-family", "sans-serif")
+              .style("font-size", 18)
+              .style("text-anchor", "middle")
+              .text("Time of Day: ");
+
+            // draw circle for each node
+            var circle = svg.selectAll("circle")
+                .data(nodes)
+                .enter()
+                .append("circle")
+                .attr("id", function(d) { return d.patID; })
+                .attr("class", "node")
+                .style("fill", function(d) { return foci[d.place].color; })
+                .attr("r", 5)
+                .style("stroke", "#000");
+
+            // for smoother initial transition to settling spots
+            circle.transition()
+                .duration(900)
+                .delay(function(d, i) { return i * 5; });
+
+
+            // function to draw end location circles
+            var drawEndPtCirc = function(location, rad, opac, loc_text) {
+                svg.append("circle")
+                    .attr("cx", foci[location].x)
+                    .attr("cy", foci[location].y)
+                    .attr("r", rad)
+                    .style("stroke", "black")
+                    .style("stroke-width", 3)
+                    .style("fill", "gray")
+                    .style("opacity", 0.5);
+
+                svg.append("text")
+                    .attr("x", foci[location].x)
+                    .attr("y", foci[location].y)
+                    .style("font-family", "sans-serif")
+                    .style("text-anchor", "middle")
+                    .text(loc_text);
+            }
+
+            // function to draw clinic location circles
+            var drawLocCirc = function(location, rad, loc_text) {
+                svg.append("circle")
+                    .attr("cx", foci[location].x)
+                    .attr("cy", foci[location].y)
+                    .attr("r", rad)
+                    .style("stroke", "black")
+                .style("stroke-width", 2)
+                .style("fill", "none");
+
+                svg.append("text")
+                    .attr("x", foci[location].x)
+                    .attr("y", foci[location].y + 55)
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 12)
+                    .style("text-anchor", "middle")
+                    .text(loc_text);
+            }
+
+            drawEndPtCirc("launchpad", 100, 0.5, "Future Patients");
+
+            drawEndPtCirc("homebase", 100, 0.5, "Past Patients");
+
+            drawLocCirc("radiationoncology", 40, "RadOnc");
+
+            drawLocCirc("lab", 40, "Lab");
+
+            drawLocCirc("radiology", 40, "Radiology");
+
+            drawLocCirc("clinic3", 40, "3rd Floor Clinic");
+
+            drawLocCirc("clinic4", 40, "4th Floor Clinic");
+
+            drawLocCirc("waitingpool", 40, "Between Appointments");
+
+            drawLocCirc("infusion", 40, "Infusion");
+
+            drawLocCirc("apheresiscellulartherapy", 40, "Apheresis");
+
+            drawLocCirc("clinic6", 40, "6th Floor Clinic");
+
+
+
+            d3.csv("patient_flow_2017-10-04_cleaned.csv", function(data) {
+
+                // run function periodically to make things move
+                var timeout;
+
+                var hour = 6;
+                var minute = 45;
+
+                // scales
+                var xScale = d3.scaleLinear()
+                    .domain([
+                        d3.min(data, function(d) { return +d.time; }),
+                        d3.max(data, function(d) { return +d.time; })])
+                    .range([padding2, w2-padding2]);
+
+                var yScale = d3.scaleLinear()
+                    .domain([0, 115])
+                    .range([h2 - padding2, 0]);
+
+                // axes
+                var xAxis = d3.axisBottom()
+                    .tickFormat(function(d) {
+                        return Math.floor(d / 60) + 6;
+                    })
+                    .scale(xScale)
+                    .ticks(12);
+
+                var yAxis = d3.axisLeft()
+                    .scale(yScale);
+
+                /*
+                    Pct. Capacity Charts
+                */
+
+                // draw infusion chart
+                var chart1 = d3.select("#chart1")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                // draw axes
+                chart1.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart1.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart1.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart1.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart1.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("Infusion")
+
+
+                // draw 3rd floor clinic chart
+                var chart2 = d3.select("#chart2")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                chart2.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart2.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart2.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart2.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart2.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("3rd Floor Clinic")
+
+
+                // draw 4th floor clinic chart
+                var chart3 = d3.select("#chart3")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                chart3.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart3.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart3.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart3.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart3.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("4th Floor Clinic")
+
+
+                // draw 6th floor clinic chart
+                var chart4 = d3.select("#chart4")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                chart4.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart4.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart4.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart4.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart4.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("6th Floor Clinic")
+
+
+                // draw radiology chart
+                var chart5 = d3.select("#chart5")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                // draw axes
+                chart5.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart5.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart5.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart5.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart5.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("Radiology")
+
+
+                // draw radonc chart
+                var chart6 = d3.select("#chart6")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                // draw axes
+                chart6.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart6.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart6.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart6.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart6.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("RadOnc")
+
+                // draw radonc chart
+                var chart7 = d3.select("#chart7")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                // draw axes
+                chart7.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart7.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart7.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart7.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart7.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("Lab");
+
+
+                // draw radonc chart
+                var chart8 = d3.select("#chart8")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", h);
+
+                // draw axes
+                chart8.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + (h2 - padding2) + ")")
+                    .call(xAxis);
+
+                chart8.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(" + padding2 + ", 0)")
+                    .call(yAxis);
+
+                // text for axes
+                chart8.append("text")
+                    .attr("transform", "translate(" + (w2/2) + " ," + (h2 - 10) + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("Time   (Hour)");
+
+                chart8.append("text")
+                    .attr("transform", "rotate(-90)")
+                    .attr("y", 0)
+                    .attr("x",0 - (h2 / 2))
+                    .attr("dy", "1em")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .text("% Capacity");
+
+                chart8.append("text")
+                    .attr("transform", "translate(" + (2 * w2 / 4) + ", " + 20 + ")")
+                    .style("text-anchor", "middle")
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .text("Apheresis")
+
+
+                var i = 0;
+                var timer = function() {
+
+                    // random place for a node to go
+                    var choices = d3.keys(foci);
+                    var foci_index = Math.floor( Math.random() * choices.length );
+                    var choice = d3.keys(foci)[foci_index];
+
+                    function checkTime(i) {
+                        if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+                        return i;
+                    }
+
+                    // check if we're at the end of the line
+                    if (i == data.length) {
+                        i = 0;
+                        minute = 57;
+                        hour = 5;
+                    }
+
+                    minute = +minute + 1;
+
+                    if (minute % 60 == 0) {
+                        minute = 0;
+                        hour = +hour + 1;
+                    }
+
+                    minute = checkTime(+minute);
+                    hour = checkTime(+hour);
+
+                    // update nodes
+                    for (var j = 0; j < num_nodes; j++) {
+
+                        //console.log(j);
+                        //console.log(data[i]["node"+j]);
+                        nodes[j].cx = foci[data[i]["node"+j]].x;
+                        nodes[j].cy = foci[data[i]["node"+j]].y;
+                        nodes[j].place = data[i]["node"+j];
+
+                    }
+
+                    simulation.alpha(.01).restart();
+
+                    svg.append("text")
+                    .attr("x", foci.launchpad.x + 40)
+                    .attr("y", foci.infusion.y - 15)
+                    .style("font-family", "sans-serif")
+                    .style("font-size", 18)
+                    .style("text-anchor", "middle")
+                    .transition()
+                    .duration(100)
+                    .text(function() {
+                        return hour + ":" + minute; })
+                    .remove();
+
+
+                    dataset2 = data.slice(0, +i);
+
+                    var circles1 = chart1.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.infusion); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.infusion <= 75) {
+                                return "green";
+                            } else if (d.infusion >= 75 && d.infusion < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+
+
+                    var circles2 = chart2.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.clinic3); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.clinic3 <= 75) {
+                                return "green";
+                            } else if (d.clinic3 >= 75 && d.clinic3 < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    var circles3 = chart3.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.clinic4); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.clinic4 <= 75) {
+                                return "green";
+                            } else if (d.clinic4 >= 75 && d.clinic4 < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    var circles4 = chart4.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.clinic6); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.clinic6 <= 75) {
+                                return "green";
+                            } else if (d.clinic6 >= 75 && d.clinic6 < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    var circles5 = chart5.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.radiology); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.radiology <= 75) {
+                                return "green";
+                            } else if (d.radiology >= 75 && d.radiology < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    var circles6 = chart6.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.radiationoncology); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.radiationoncology <= 75) {
+                                return "green";
+                            } else if (d.radiationoncology >= 75 && d.radiationoncology < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    var circles7 = chart7.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.lab); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.lab <= 75) {
+                                return "green";
+                            } else if (d.lab >= 75 && d.lab < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    var circles8 = chart8.selectAll("circle")
+                        .data(dataset2)
+                        .enter()
+                        .append("circle")
+                        .attr("cx", function(d) { return xScale(d.time); })
+                        .attr("cy", function(d) { return yScale(d.apheresiscellulartherapy); })
+                        .attr("r", 3)
+                        .style("fill", function(d) {
+                            if (d.apheresiscellulartherapy <= 75) {
+                                return "green";
+                            } else if (d.apheresiscellulartherapy >= 75 && d.apheresiscellulartherapy < 100) {
+                                return "orange";
+                            } else {
+                                return "red";
+                            }});
+
+                    i += 1;
+
+                    // run it again in a few seconds
+                    timeout = setTimeout(timer, 100);
+
+                    };
+
+                timeout = setTimeout(timer, 100);
+
+            });
+
+            function tick(e) {
+
+                circle.each(gravity(0.05))
+                    .style("fill", function(d) { return foci[d.place].color; })
+                    .attr("cx", function(d) { return d.x; })
+                    .attr("cy", function(d) { return d.y; });
+
+            };
+
+
+            function gravity(alpha) {
+                return function(d) {
+                    d.y += (foci[d.place].y - d.y) * alpha;
+                    d.x += (foci[d.place].x - d.x) * alpha;
+                };
+            }
+
+
+
+        </script>
+    </body>
+</html>
